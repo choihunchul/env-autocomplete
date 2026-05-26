@@ -1,0 +1,93 @@
+{
+  "name": "env-autocomplete",
+  "displayName": "ENV Autocomplete with Comments",
+  "description": "Auto-completes common .env keys with descriptive comments and grouping.",
+  "version": "1.0.2",
+  "publisher": "myside",
+  "license": "MIT",
+  "author": {
+    "name": "myside"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myside/env-autocomplete"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:properties",
+    "onLanguage:dotenv"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "envAutocomplete.addKeyToDictionary",
+        "title": "ENV: 사전에 키 추가"
+      }
+    ],
+    "languages": [
+      {
+        "id": "dotenv",
+        "extensions": [
+          ".env",
+          ".env.example",
+          ".env.local",
+          ".env.development",
+          ".env.production",
+          ".env.test"
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "Env Autocomplete",
+      "properties": {
+        "envAutocomplete.enableBuiltInKeys": {
+          "type": "boolean",
+          "default": true,
+          "description": "내장된 고품질 환경 변수 사전을 기반으로 자동 완성을 추천합니다."
+        },
+        "envAutocomplete.customKeys": {
+          "type": "object",
+          "default": {},
+          "description": "사용자 지정을 위해 직접 환경 변수를 등록합니다. 객체 구조(value, description, group)를 따릅니다."
+        },
+        "envAutocomplete.scanProjectForKeys": {
+          "type": "boolean",
+          "default": true,
+          "description": "작업 영역의 프로젝트 코드 소스를 스캔하여 동적으로 환경 변수 키를 감지하고 추천 목록에 추가합니다."
+        },
+        "envAutocomplete.maskValues": {
+          "type": "boolean",
+          "default": true,
+          "description": ".env 파일에서 = 뒤의 값을 •••••로 마스킹하여 화면에 표시합니다. 해당 줄을 편집 중에는 마스킹이 일시 해제됩니다."
+        },
+        "envAutocomplete.highlightUnknownKeys": {
+          "type": "boolean",
+          "default": true,
+          "description": "사전에 등록되지 않은 환경 변수 키를 주황색으로 하이라이트하고 Quick Fix로 사전에 추가할 수 있도록 합니다."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "jest --passWithNoTests",
+    "package": "npx @vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.9.1",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.1",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
+    "typescript": "^6.0.3"
+  }
+}

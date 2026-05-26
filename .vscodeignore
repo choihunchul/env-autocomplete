@@ -1,0 +1,27 @@
+# .vscodeignore
+# 패키지에 포함하지 않을 파일/디렉터리 목록
+
+# 소스 TypeScript (컴파일된 out/ 만 포함)
+src/
+tests/
+docs/
+
+# 설정·도구 파일
+tsconfig.json
+jest.config.js
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# 개발 전용 파일
+.gitignore
+.gitattributes
+*.vsix
+
+# 문서 (필요하면 아래 주석 해제)
+# CHANGELOG.md
+# README.md
+
+# Node 관련
+node_modules/
+npm-debug.log
