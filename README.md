@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./icon.png" width="128" height="128" style="border-radius: 24px;" />
+
 # 🔐 ENV Autocomplete
 
 **A VS Code extension that supercharges `.env` file editing with smart autocomplete, value masking, unknown key highlighting, and group-sorted formatting.**
