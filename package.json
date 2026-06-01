@@ -1,5 +1,5 @@
 {
-  "name": "env-autocomplete",
+  "name": "env-autocomplete-with-comments",
   "displayName": "ENV Autocomplete with Comments",
   "description": "Auto-completes common .env keys with descriptive comments and grouping.",
   "version": "1.0.3",
