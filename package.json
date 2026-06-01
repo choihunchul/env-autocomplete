@@ -2,7 +2,7 @@
   "name": "env-autocomplete-with-comments",
   "displayName": "ENV Autocomplete with Comments",
   "description": "Auto-completes common .env keys with descriptive comments and grouping.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "myside",
   "icon": "icon.png",
   "license": "MIT",
