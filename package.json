@@ -2,7 +2,7 @@
   "name": "env-autocomplete",
   "displayName": "ENV Autocomplete with Comments",
   "description": "Auto-completes common .env keys with descriptive comments and grouping.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "myside",
   "icon": "icon.png",
   "license": "MIT",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/myside/env-autocomplete"
+    "url": "https://github.com/choihunchul/env-autocomplete.git"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -80,7 +80,9 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "jest --passWithNoTests",
-    "package": "npx @vscode/vsce package"
+    "package": "npx @vscode/vsce package",
+    "publish:marketplace": "source .env && npx @vscode/vsce publish -p $VSCE_PAT",
+    "publish:openvsx": "source .env && npx ovsx publish -p $OVSX_PAT"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

@@ -1,0 +1,92 @@
+name: Publish Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Dry Run (package only, do not publish)'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Compile Extension
+        run: npm run compile
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Package Extension
+        run: npx @vscode/vsce package
+
+      - name: Verify Package Contents
+        run: |
+          ls -la *.vsix
+          echo "Successfully packaged VS Code extension:"
+          ls *.vsix
+
+      # Publish to Visual Studio Marketplace (requires VSCE_PAT secret)
+      - name: Publish to VS Code Marketplace
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry-run == false }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo "::warning::VSCE_PAT secret is missing. Skipping Visual Studio Marketplace publishing."
+          else
+            npx @vscode/vsce publish -p "$VSCE_PAT"
+          fi
+
+      # Publish to Open VSX Registry (requires OVSX_PAT secret)
+      - name: Publish to Open VSX Registry
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry-run == false }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "::warning::OVSX_PAT secret is missing. Skipping Open VSX Registry publishing."
+          else
+            npx ovsx publish -p "$OVSX_PAT"
+          fi
+
+      # Create a GitHub Release and attach the packaged .vsix file
+      - name: Create GitHub Release
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          echo "Creating GitHub Release for tag: $TAG_NAME"
+          
+          # Create draft release if it's a pre-release tag, or active release otherwise
+          PRERELEASE_FLAG=""
+          if [[ "$TAG_NAME" == *"-pre"* || "$TAG_NAME" == *"-beta"* || "$TAG_NAME" == *"-alpha"* ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          
+          gh release create "$TAG_NAME" *.vsix \
+            --title "Release $TAG_NAME" \
+            --generate-notes \
+            $PRERELEASE_FLAG

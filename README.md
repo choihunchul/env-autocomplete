@@ -6,7 +6,7 @@
 
 **A VS Code extension that supercharges `.env` file editing with smart autocomplete, value masking, unknown key highlighting, and group-sorted formatting.**
 
-[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/hunchulchoi/env-autocomplete)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/choihunchul/env-autocomplete)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.85.0-007ACC.svg)](https://code.visualstudio.com/)
 
