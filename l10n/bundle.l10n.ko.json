@@ -21,5 +21,7 @@
   "ENV: {0} does not exist.": "ENV: {0} 파일이 존재하지 않습니다.",
   ".env ↔ .env.example (Key Comparison)": ".env ↔ .env.example (키 비교)",
   ".env.example file is missing. Right-click → \"ENV: Create/Sync .env.example\" to create it.": ".env.example 파일이 없습니다. 우클릭 → \"ENV: .env.example 작성/동기화\" 로 생성하세요.",
-  "'{0}' key is missing from .env.example. Sync is needed.": "'{0}' 키가 .env.example에 없습니다. 동기화가 필요합니다."
+  "'{0}' key is missing from .env.example. Sync is needed.": "'{0}' 키가 .env.example에 없습니다. 동기화가 필요합니다.",
+  ".env file is missing. Right-click \u2192 \"ENV: Create/Sync .env\" to create it.": ".env 파일이 없습니다. 우클릭 → \"ENV: .env 작성/동기화\" 로 생성하세요.",
+  "'{0}' key is missing from .env. Sync is needed.": "'{0}' 키가 .env에 없습니다. 동기화가 필요합니다."
 }

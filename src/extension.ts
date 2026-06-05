@@ -166,53 +166,92 @@ function checkEnvExampleSync(
   const filePath = document.uri.fsPath;
   const basename = path.basename(filePath);
 
-  // .env 파일(예: .env, .env.local)에만 적용. .env.example 제외
-  if (!basename.match(/^\.env/) || basename.endsWith('.example')) {
+  if (!basename.match(/^\.env/)) {
+    syncDiagnostics.set(document.uri, []);
     return;
   }
 
-  const examplePath = filePath + '.example';
+  const isExample = basename.endsWith('.example');
   const diagnostics: vscode.Diagnostic[] = [];
 
-  // ── case 1: .env.example 파일 자체가 없음 ──────────────────────────────
-  if (!fs.existsSync(examplePath)) {
-    const range = new vscode.Range(0, 0, 0, 0);
-    const diag = new vscode.Diagnostic(
-      range,
-      vscode.l10n.t('.env.example file is missing. Right-click → "ENV: Create/Sync .env.example" to create it.'),
-      vscode.DiagnosticSeverity.Warning
-    );
-    diag.source = ENV_SYNC_SOURCE;
-    diagnostics.push(diag);
-    syncDiagnostics.set(document.uri, diagnostics);
-    return;
-  }
+  if (isExample) {
+    // ── .env.example 열림: 반대편 .env 확인 ──────────────────────────
+    const envPath = filePath.replace(/\.example$/, '');
 
-  // ── case 2: 키 비교 ────────────────────────────────────────────────────
-  const exampleContent = fs.readFileSync(examplePath, 'utf8');
-  const exampleKeys = new Set(
-    exampleContent
-      .split(/\r?\n/)
-      .map(l => LINE_REGEX.exec(l.trim()))
-      .filter((m): m is RegExpExecArray => m !== null)
-      .map(m => m[1])
-  );
-
-  for (let i = 0; i < document.lineCount; i++) {
-    const lineText = document.lineAt(i).text;
-    const match = LINE_REGEX.exec(lineText.trim());
-    if (!match) { continue; }
-
-    const key = match[1];
-    if (!exampleKeys.has(key)) {
-      const keyRange = new vscode.Range(i, 0, i, key.length);
+    if (!fs.existsSync(envPath)) {
       const diag = new vscode.Diagnostic(
-        keyRange,
-        vscode.l10n.t("'{0}' key is missing from .env.example. Sync is needed.", key),
+        new vscode.Range(0, 0, 0, 0),
+        vscode.l10n.t('.env file is missing. Right-click → "ENV: Create/Sync .env" to create it.'),
         vscode.DiagnosticSeverity.Warning
       );
       diag.source = ENV_SYNC_SOURCE;
       diagnostics.push(diag);
+      syncDiagnostics.set(document.uri, diagnostics);
+      return;
+    }
+
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    const envKeys = new Set(
+      envContent
+        .split(/\r?\n/)
+        .map(l => LINE_REGEX.exec(l.trim()))
+        .filter((m): m is RegExpExecArray => m !== null)
+        .map(m => m[1])
+    );
+
+    for (let i = 0; i < document.lineCount; i++) {
+      const match = LINE_REGEX.exec(document.lineAt(i).text.trim());
+      if (!match) { continue; }
+      const key = match[1];
+      if (!envKeys.has(key)) {
+        const diag = new vscode.Diagnostic(
+          new vscode.Range(i, 0, i, key.length),
+          vscode.l10n.t("'{0}' key is missing from .env. Sync is needed.", key),
+          vscode.DiagnosticSeverity.Warning
+        );
+        diag.source = ENV_SYNC_SOURCE;
+        diagnostics.push(diag);
+      }
+    }
+
+  } else {
+    // ── .env 열림: 반대편 .env.example 확인 ────────────────────────
+    const examplePath = filePath + '.example';
+
+    if (!fs.existsSync(examplePath)) {
+      const diag = new vscode.Diagnostic(
+        new vscode.Range(0, 0, 0, 0),
+        vscode.l10n.t('.env.example file is missing. Right-click → "ENV: Create/Sync .env.example" to create it.'),
+        vscode.DiagnosticSeverity.Warning
+      );
+      diag.source = ENV_SYNC_SOURCE;
+      diagnostics.push(diag);
+      syncDiagnostics.set(document.uri, diagnostics);
+      return;
+    }
+
+    const exampleContent = fs.readFileSync(examplePath, 'utf8');
+    const exampleKeys = new Set(
+      exampleContent
+        .split(/\r?\n/)
+        .map(l => LINE_REGEX.exec(l.trim()))
+        .filter((m): m is RegExpExecArray => m !== null)
+        .map(m => m[1])
+    );
+
+    for (let i = 0; i < document.lineCount; i++) {
+      const match = LINE_REGEX.exec(document.lineAt(i).text.trim());
+      if (!match) { continue; }
+      const key = match[1];
+      if (!exampleKeys.has(key)) {
+        const diag = new vscode.Diagnostic(
+          new vscode.Range(i, 0, i, key.length),
+          vscode.l10n.t("'{0}' key is missing from .env.example. Sync is needed.", key),
+          vscode.DiagnosticSeverity.Warning
+        );
+        diag.source = ENV_SYNC_SOURCE;
+        diagnostics.push(diag);
+      }
     }
   }
 
