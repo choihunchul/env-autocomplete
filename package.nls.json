@@ -1,0 +1,12 @@
+{
+  "command.addKeyToDictionary.title": "ENV: Add key to dictionary",
+  "command.createOrSyncExample.title": "ENV: Create/Sync .env.example",
+  "command.createOrSyncEnv.title": "ENV: Create/Sync .env",
+  "command.compareKeys.title": "ENV: Compare Keys",
+  "config.title": "Env Autocomplete",
+  "config.enableBuiltInKeys.description": "Recommend auto-completion based on the built-in high-quality environment variable dictionary.",
+  "config.customKeys.description": "Register custom environment variables. Follow the object structure (value, description, group).",
+  "config.scanProjectForKeys.description": "Scan project source code to dynamically detect environment variable keys and add them to suggestions.",
+  "config.maskValues.description": "Mask values after = in .env files with •••••. Masking is temporarily disabled while editing the line.",
+  "config.highlightUnknownKeys.description": "Highlight unregistered environment variable keys in orange and allow adding them to the dictionary via Quick Fix."
+}

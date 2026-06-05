@@ -56,7 +56,7 @@ function applyMaskDecorations(
     ranges.push({
       range: new vscode.Range(i, valueStart, i, valueEnd),
       hoverMessage: new vscode.MarkdownString(
-        '🔒 **값이 마스킹되었습니다.**\n\n해당 줄을 클릭하면 편집할 수 있습니다.\n\n`envAutocomplete.maskValues: false` 로 비활성화할 수 있습니다.'
+        vscode.l10n.t('🔒 **Value is masked.**\n\nClick the line to edit.\n\n`envAutocomplete.maskValues: false` to disable.')
       ),
     });
   }
@@ -74,7 +74,7 @@ const unknownKeyDecoration = vscode.window.createTextEditorDecorationType({
   overviewRulerColor: new vscode.ThemeColor('editorWarning.foreground'),
   overviewRulerLane: vscode.OverviewRulerLane.Right,
   after: {
-    contentText: ' ⚠ 미등록 키',
+    contentText: ` ⚠ ${vscode.l10n.t('Unregistered key')}`,
     color: new vscode.ThemeColor('editorWarning.foreground'),
     fontStyle: 'italic',
     margin: '0 0 0 6px',
@@ -113,14 +113,13 @@ async function applyUnknownKeyHighlights(
     decorations.push({
       range: keyRange,
       hoverMessage: new vscode.MarkdownString(
-        `⚠ **\`${key}\`** 는 사전에 등록되지 않은 키입니다.\n\n` +
-        `💡 전구 아이콘(또는 \`Ctrl+.\`)을 눌러 사전에 추가할 수 있습니다.`
+        vscode.l10n.t('⚠ **`{0}`** is not registered in the dictionary.\n\n💡 Click the lightbulb (or `Ctrl+.`) to add it.', key)
       ),
     });
 
     const diagnostic = new vscode.Diagnostic(
       keyRange,
-      `'${key}' 는 ENV Autocomplete 사전에 등록되지 않은 키입니다.`,
+      vscode.l10n.t("'{0}' is not registered in the ENV Autocomplete dictionary.", key),
       vscode.DiagnosticSeverity.Warning
     );
     diagnostic.code   = UNKNOWN_KEY_DIAGNOSTIC_CODE;
@@ -180,7 +179,7 @@ function checkEnvExampleSync(
     const range = new vscode.Range(0, 0, 0, 0);
     const diag = new vscode.Diagnostic(
       range,
-      `.env.example 파일이 없습니다. 우클릭 → "ENV: .env.example 작성/동기화" 로 생성하세요.`,
+      vscode.l10n.t('.env.example file is missing. Right-click → "ENV: Create/Sync .env.example" to create it.'),
       vscode.DiagnosticSeverity.Warning
     );
     diag.source = ENV_SYNC_SOURCE;
@@ -209,7 +208,7 @@ function checkEnvExampleSync(
       const keyRange = new vscode.Range(i, 0, i, key.length);
       const diag = new vscode.Diagnostic(
         keyRange,
-        `'${key}' 키가 .env.example에 없습니다. 동기화가 필요합니다.`,
+        vscode.l10n.t("'{0}' key is missing from .env.example. Sync is needed.", key),
         vscode.DiagnosticSeverity.Warning
       );
       diag.source = ENV_SYNC_SOURCE;
@@ -253,8 +252,8 @@ export function activate(context: vscode.ExtensionContext) {
                 if (!merged[key]) {
                   merged[key] = {
                     value: 'your_value_here',
-                    description: '프로젝트 소스 코드 스캔을 통해 감지된 환경 변수입니다.',
-                    group: 'Scanned From Source',
+                    description: vscode.l10n.t('Detected by scanning project source code.'),
+                    group: vscode.l10n.t('Scanned From Source'),
                   };
                 }
               });
@@ -266,7 +265,7 @@ export function activate(context: vscode.ExtensionContext) {
           const item = new vscode.CompletionItem(key, vscode.CompletionItemKind.Variable);
           item.detail = `[${info.group}]`;
           item.documentation = new vscode.MarkdownString(
-            `**설명:** ${info.description}\n\n**기본값:** \`${info.value}\``
+            vscode.l10n.t('**Description:** {0}\n\n**Default:** `{1}`', info.description, info.value)
           );
           const snippet = new vscode.SnippetString();
           snippet.appendText(`# [${info.group}] ${info.description}\n`);
@@ -297,12 +296,12 @@ export function activate(context: vscode.ExtensionContext) {
 
             const key    = keyMatch[1];
             const action = new vscode.CodeAction(
-              `🔖 '${key}' 를 ENV 사전에 추가`,
+              vscode.l10n.t("🔖 Add '{0}' to ENV dictionary", key),
               vscode.CodeActionKind.QuickFix
             );
             action.command = {
               command: 'envAutocomplete.addKeyToDictionary',
-              title: '사전에 추가',
+              title: vscode.l10n.t('Add to dictionary'),
               arguments: [key, document.uri],
             };
             action.diagnostics = [diagnostic];
@@ -430,13 +429,13 @@ export function activate(context: vscode.ExtensionContext) {
       // 탐색기 우클릭 시 contextUri로 전달되고, 타이틀 바 클릭 시엔 activeTextEditor 사용
       const fileUri = contextUri ?? vscode.window.activeTextEditor?.document.uri;
       if (!fileUri) {
-        vscode.window.showErrorMessage('ENV: .env 파일을 열거나 선택해주세요.');
+        vscode.window.showErrorMessage(vscode.l10n.t('ENV: Open or select a .env file.'));
         return;
       }
 
       const envFilePath = fileUri.fsPath;
       if (!envFilePath.endsWith('.env') && !path.basename(envFilePath).match(/^\.env$/)) {
-        vscode.window.showErrorMessage('ENV: .env 파일에서만 실행 가능합니다.');
+        vscode.window.showErrorMessage(vscode.l10n.t('ENV: Only available for .env files.'));
         return;
       }
 
@@ -454,14 +453,14 @@ export function activate(context: vscode.ExtensionContext) {
       const newContent = generateExampleFromEnv(envContent, exampleContent, dictionary);
 
       if (newContent === exampleContent) {
-        vscode.window.showInformationMessage('ENV: .env.example이 이미 최신 상태입니다.');
+        vscode.window.showInformationMessage(vscode.l10n.t('ENV: .env.example is already up to date.'));
         return;
       }
 
       fs.writeFileSync(exampleFilePath, newContent, 'utf8');
       const doc = await vscode.workspace.openTextDocument(exampleFilePath);
       await vscode.window.showTextDocument(doc);
-      vscode.window.showInformationMessage('ENV: .env.example 작성/동기화 완료!');
+      vscode.window.showInformationMessage(vscode.l10n.t('ENV: .env.example created/synced!'));
     }
   );
 
@@ -471,13 +470,13 @@ export function activate(context: vscode.ExtensionContext) {
     async (contextUri?: vscode.Uri) => {
       const fileUri = contextUri ?? vscode.window.activeTextEditor?.document.uri;
       if (!fileUri) {
-        vscode.window.showErrorMessage('ENV: .env.example 파일을 열거나 선택해주세요.');
+        vscode.window.showErrorMessage(vscode.l10n.t('ENV: Open or select a .env.example file.'));
         return;
       }
 
       const exampleFilePath = fileUri.fsPath;
       if (!path.basename(exampleFilePath).match(/^\.env\.example$/)) {
-        vscode.window.showErrorMessage('ENV: .env.example 파일에서만 실행 가능합니다.');
+        vscode.window.showErrorMessage(vscode.l10n.t('ENV: Only available for .env.example files.'));
         return;
       }
 
@@ -490,14 +489,14 @@ export function activate(context: vscode.ExtensionContext) {
       const newContent = generateEnvFromExample(exampleContent, envContent);
 
       if (newContent === envContent) {
-        vscode.window.showInformationMessage('ENV: .env가 이미 최신 상태입니다.');
+        vscode.window.showInformationMessage(vscode.l10n.t('ENV: .env is already up to date.'));
         return;
       }
 
       fs.writeFileSync(envFilePath, newContent, 'utf8');
       const doc = await vscode.workspace.openTextDocument(envFilePath);
       await vscode.window.showTextDocument(doc);
-      vscode.window.showInformationMessage('ENV: .env 작성/동기화 완료!');
+      vscode.window.showInformationMessage(vscode.l10n.t('ENV: .env created/synced!'));
     }
   );
 
@@ -507,7 +506,7 @@ export function activate(context: vscode.ExtensionContext) {
     async (contextUri?: vscode.Uri) => {
       const fileUri = contextUri ?? vscode.window.activeTextEditor?.document.uri;
       if (!fileUri) {
-        vscode.window.showErrorMessage('ENV: .env 또는 .env.example 파일을 열거나 선택해주세요.');
+        vscode.window.showErrorMessage(vscode.l10n.t('ENV: Open or select a .env or .env.example file.'));
         return;
       }
 
@@ -524,16 +523,16 @@ export function activate(context: vscode.ExtensionContext) {
         envFilePath = filePath;
         exampleFilePath = filePath.endsWith('.example') ? filePath : filePath + '.example';
       } else {
-        vscode.window.showErrorMessage('ENV: .env 또는 .env.example 파일에서만 실행 가능합니다.');
+        vscode.window.showErrorMessage(vscode.l10n.t('ENV: Only available for .env or .env.example files.'));
         return;
       }
 
       if (!fs.existsSync(envFilePath)) {
-        vscode.window.showErrorMessage(`ENV: ${path.basename(envFilePath)} 파일이 존재하지 않습니다.`);
+        vscode.window.showErrorMessage(vscode.l10n.t('ENV: {0} does not exist.', path.basename(envFilePath)));
         return;
       }
       if (!fs.existsSync(exampleFilePath)) {
-        vscode.window.showErrorMessage(`ENV: ${path.basename(exampleFilePath)} 파일이 존재하지 않습니다.`);
+        vscode.window.showErrorMessage(vscode.l10n.t('ENV: {0} does not exist.', path.basename(exampleFilePath)));
         return;
       }
 
@@ -549,7 +548,7 @@ export function activate(context: vscode.ExtensionContext) {
         'vscode.diff',
         envVirtualUri,
         exampleVirtualUri,
-        '.env ↔ .env.example (키 비교)'
+        vscode.l10n.t('.env ↔ .env.example (Key Comparison)')
       );
     }
   );

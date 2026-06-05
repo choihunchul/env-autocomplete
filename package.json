@@ -24,25 +24,26 @@
     "onLanguage:dotenv"
   ],
   "main": "./out/extension.js",
+  "l10n": "./l10n",
   "contributes": {
     "commands": [
       {
         "command": "envAutocomplete.addKeyToDictionary",
-        "title": "ENV: 사전에 키 추가"
+        "title": "%command.addKeyToDictionary.title%"
       },
       {
         "command": "envAutocomplete.createOrSyncExample",
-        "title": "ENV: .env.example 작성/동기화",
+        "title": "%command.createOrSyncExample.title%",
         "icon": "$(sync)"
       },
       {
         "command": "envAutocomplete.createOrSyncEnv",
-        "title": "ENV: .env 작성/동기화",
+        "title": "%command.createOrSyncEnv.title%",
         "icon": "$(sync)"
       },
       {
         "command": "envAutocomplete.compareKeys",
-        "title": "ENV: 키 비교 (Compare Keys)",
+        "title": "%command.compareKeys.title%",
         "icon": "$(diff)"
       }
     ],
@@ -80,6 +81,23 @@
           "when": "resourceFilename =~ /^\\.env(\\..+)?$/",
           "group": "navigation@2"
         }
+      ],
+      "editor/context": [
+        {
+          "command": "envAutocomplete.createOrSyncExample",
+          "when": "resourceFilename == .env",
+          "group": "env-sync@1"
+        },
+        {
+          "command": "envAutocomplete.createOrSyncEnv",
+          "when": "resourceFilename == .env.example",
+          "group": "env-sync@1"
+        },
+        {
+          "command": "envAutocomplete.compareKeys",
+          "when": "resourceFilename =~ /^\\.env(\\..+)?$/",
+          "group": "env-sync@2"
+        }
       ]
     },
     "languages": [
@@ -96,32 +114,32 @@
       }
     ],
     "configuration": {
-      "title": "Env Autocomplete",
+      "title": "%config.title%",
       "properties": {
         "envAutocomplete.enableBuiltInKeys": {
           "type": "boolean",
           "default": true,
-          "description": "내장된 고품질 환경 변수 사전을 기반으로 자동 완성을 추천합니다."
+          "description": "%config.enableBuiltInKeys.description%"
         },
         "envAutocomplete.customKeys": {
           "type": "object",
           "default": {},
-          "description": "사용자 지정을 위해 직접 환경 변수를 등록합니다. 객체 구조(value, description, group)를 따릅니다."
+          "description": "%config.customKeys.description%"
         },
         "envAutocomplete.scanProjectForKeys": {
           "type": "boolean",
           "default": true,
-          "description": "작업 영역의 프로젝트 코드 소스를 스캔하여 동적으로 환경 변수 키를 감지하고 추천 목록에 추가합니다."
+          "description": "%config.scanProjectForKeys.description%"
         },
         "envAutocomplete.maskValues": {
           "type": "boolean",
           "default": true,
-          "description": ".env 파일에서 = 뒤의 값을 •••••로 마스킹하여 화면에 표시합니다. 해당 줄을 편집 중에는 마스킹이 일시 해제됩니다."
+          "description": "%config.maskValues.description%"
         },
         "envAutocomplete.highlightUnknownKeys": {
           "type": "boolean",
           "default": true,
-          "description": "사전에 등록되지 않은 환경 변수 키를 주황색으로 하이라이트하고 Quick Fix로 사전에 추가할 수 있도록 합니다."
+          "description": "%config.highlightUnknownKeys.description%"
         }
       }
     }
