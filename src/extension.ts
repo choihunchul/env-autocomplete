@@ -463,6 +463,60 @@ export function activate(context: vscode.ExtensionContext) {
     syncDiagnosticCollection.delete(document.uri);
   });
 
+  // ── 5-4b. 저장 시 미코멘트 키 자동 삽입 제안 ─────────────────────────────
+  // 재진입 방지 플래그 (자동 삽입 후 재저장 시 무한루프 차단)
+  let _autoCommentSaving = false;
+
+  const onDidSave = vscode.workspace.onDidSaveTextDocument(async (document) => {
+    if (_autoCommentSaving) { return; }
+    const basename = path.basename(document.uri.fsPath);
+    if (!basename.match(/^\.env/) || basename.endsWith('.example')) { return; }
+
+    const config = vscode.workspace.getConfiguration('envAutocomplete');
+    const enableBuiltIn = config.get<boolean>('enableBuiltInKeys', true);
+    const customKeys    = config.get<Record<string, EnvKeyInfo>>('customKeys', {});
+    const dictionary    = mergeDictionaries(enableBuiltIn, customKeys);
+
+    // 코멘트 없는 키 수집 (바로 위 줄이 '#'으로 시작하지 않는 경우)
+    const missing: { line: number; key: string }[] = [];
+    for (let i = 0; i < document.lineCount; i++) {
+      const match = LINE_REGEX.exec(document.lineAt(i).text);
+      if (!match) { continue; }
+      const key = match[1];
+      if (!dictionary[key]) { continue; }  // 사전에 없는 키는 제외
+      const prevLine = i > 0 ? document.lineAt(i - 1).text.trim() : '';
+      if (!prevLine.startsWith('#')) {
+        missing.push({ line: i, key });
+      }
+    }
+
+    if (missing.length === 0) { return; }
+
+    const answer = await vscode.window.showInformationMessage(
+      vscode.l10n.t('{0} key(s) have no comment. Add auto-comments from dictionary?', missing.length),
+      vscode.l10n.t('Add Comments'),
+      vscode.l10n.t('Skip')
+    );
+
+    if (answer !== vscode.l10n.t('Add Comments')) { return; }
+
+    // 역순으로 삽입해야 줄 번호가 밀리지 않음
+    const edit = new vscode.WorkspaceEdit();
+    for (const { line, key } of [...missing].reverse()) {
+      const info = dictionary[key];
+      const comment = `# [${info.group}] ${info.description}\n`;
+      edit.insert(document.uri, new vscode.Position(line, 0), comment);
+    }
+    await vscode.workspace.applyEdit(edit);
+
+    _autoCommentSaving = true;
+    try {
+      await document.save();
+    } finally {
+      _autoCommentSaving = false;
+    }
+  });
+
   // ── 5-5. 가상 문서 프로바이더: 값 제거 Diff용 ─────────────────────────────
   const envKeyDiffScheme = 'env-key-diff';
   const envKeyDiffProvider = vscode.workspace.registerTextDocumentContentProvider(
@@ -624,6 +678,7 @@ export function activate(context: vscode.ExtensionContext) {
     onSelectionChange,
     onConfigChange,
     onDocClose,
+    onDidSave,
     syncDiagnosticCollection,
     envKeyDiffProvider,
     createOrSyncExampleCommand,

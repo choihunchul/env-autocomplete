@@ -24,5 +24,8 @@
   "'{0}' key is missing from .env.example. Sync is needed.": "'{0}' 키가 .env.example에 없습니다. 동기화가 필요합니다.",
   ".env file is missing. Right-click \u2192 \"ENV: Create/Sync .env\" to create it.": ".env 파일이 없습니다. 우클릭 → \"ENV: .env 작성/동기화\" 로 생성하세요.",
   "'{0}' key is missing from .env. Sync is needed.": "'{0}' 키가 .env에 없습니다. 동기화가 필요합니다.",
-  "'{0}' has no value set.": "'{0}' 에 값이 설정되지 않았습니다."
+  "'{0}' has no value set.": "'{0}' 에 값이 설정되지 않았습니다.",
+  "{0} key(s) have no comment. Add auto-comments from dictionary?": "{0}개의 키에 코멘트가 없습니다. 사전에서 자동으로 코멘트를 추가할까요?",
+  "Add Comments": "코멘트 추가",
+  "Skip": "건너뛰기"
 }
