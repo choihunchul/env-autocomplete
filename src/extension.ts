@@ -156,11 +156,78 @@ async function refreshDecorations(
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// 4-b. .env ↔ .env.example 키 동기화 경고 Diagnostic
+// ═════════════════════════════════════════════════════════════════════════════
+const ENV_SYNC_SOURCE = 'ENV Sync';
+
+function checkEnvExampleSync(
+  document: vscode.TextDocument,
+  syncDiagnostics: vscode.DiagnosticCollection
+): void {
+  const filePath = document.uri.fsPath;
+  const basename = path.basename(filePath);
+
+  // .env 파일(예: .env, .env.local)에만 적용. .env.example 제외
+  if (!basename.match(/^\.env/) || basename.endsWith('.example')) {
+    return;
+  }
+
+  const examplePath = filePath + '.example';
+  const diagnostics: vscode.Diagnostic[] = [];
+
+  // ── case 1: .env.example 파일 자체가 없음 ──────────────────────────────
+  if (!fs.existsSync(examplePath)) {
+    const range = new vscode.Range(0, 0, 0, 0);
+    const diag = new vscode.Diagnostic(
+      range,
+      `.env.example 파일이 없습니다. 우클릭 → "ENV: .env.example 작성/동기화" 로 생성하세요.`,
+      vscode.DiagnosticSeverity.Warning
+    );
+    diag.source = ENV_SYNC_SOURCE;
+    diagnostics.push(diag);
+    syncDiagnostics.set(document.uri, diagnostics);
+    return;
+  }
+
+  // ── case 2: 키 비교 ────────────────────────────────────────────────────
+  const exampleContent = fs.readFileSync(examplePath, 'utf8');
+  const exampleKeys = new Set(
+    exampleContent
+      .split(/\r?\n/)
+      .map(l => LINE_REGEX.exec(l.trim()))
+      .filter((m): m is RegExpExecArray => m !== null)
+      .map(m => m[1])
+  );
+
+  for (let i = 0; i < document.lineCount; i++) {
+    const lineText = document.lineAt(i).text;
+    const match = LINE_REGEX.exec(lineText.trim());
+    if (!match) { continue; }
+
+    const key = match[1];
+    if (!exampleKeys.has(key)) {
+      const keyRange = new vscode.Range(i, 0, i, key.length);
+      const diag = new vscode.Diagnostic(
+        keyRange,
+        `'${key}' 키가 .env.example에 없습니다. 동기화가 필요합니다.`,
+        vscode.DiagnosticSeverity.Warning
+      );
+      diag.source = ENV_SYNC_SOURCE;
+      diagnostics.push(diag);
+    }
+  }
+
+  syncDiagnostics.set(document.uri, diagnostics);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // 5. 익스텐션 진입점
 // ═════════════════════════════════════════════════════════════════════════════
 export function activate(context: vscode.ExtensionContext) {
   const diagnosticCollection =
     vscode.languages.createDiagnosticCollection('envAutocomplete');
+  const syncDiagnosticCollection =
+    vscode.languages.createDiagnosticCollection('env-sync');
 
   // ── 5-1. 자동 완성 프로바이더 ─────────────────────────────────────────────
   const completionProvider = vscode.languages.registerCompletionItemProvider(
@@ -290,11 +357,13 @@ export function activate(context: vscode.ExtensionContext) {
   if (vscode.window.activeTextEditor &&
       isEnvFile(vscode.window.activeTextEditor.document)) {
     refreshDecorations(vscode.window.activeTextEditor, diagnosticCollection);
+    checkEnvExampleSync(vscode.window.activeTextEditor.document, syncDiagnosticCollection);
   }
 
   const onEditorChange = vscode.window.onDidChangeActiveTextEditor(editor => {
     if (editor && isEnvFile(editor.document)) {
       refreshDecorations(editor, diagnosticCollection);
+      checkEnvExampleSync(editor.document, syncDiagnosticCollection);
     }
   });
 
@@ -304,6 +373,7 @@ export function activate(context: vscode.ExtensionContext) {
         editor.document === event.document &&
         isEnvFile(editor.document)) {
       refreshDecorations(editor, diagnosticCollection);
+      checkEnvExampleSync(editor.document, syncDiagnosticCollection);
     }
   });
 
@@ -333,6 +403,7 @@ export function activate(context: vscode.ExtensionContext) {
   // 파일 닫힐 때 Diagnostic 정리
   const onDocClose = vscode.workspace.onDidCloseTextDocument(document => {
     diagnosticCollection.delete(document.uri);
+    syncDiagnosticCollection.delete(document.uri);
   });
 
   // ── 5-5. 가상 문서 프로바이더: 값 제거 Diff용 ─────────────────────────────
@@ -496,6 +567,7 @@ export function activate(context: vscode.ExtensionContext) {
     onSelectionChange,
     onConfigChange,
     onDocClose,
+    syncDiagnosticCollection,
     envKeyDiffProvider,
     createOrSyncExampleCommand,
     createOrSyncEnvCommand,
