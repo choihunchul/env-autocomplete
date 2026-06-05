@@ -52,7 +52,24 @@ Disable masking any time:
 
 ---
 
-### 3. ⚠️ Unknown Key Highlight & Quick Fix
+### 5. ✨ 자동 코멘트 삽입 (저장 시)
+
+저장(`Cmd+S`)할 때 사전에 존재하는 키 중 코멘트가 없는 경우,
+VS Code가 팝업을 띄워 자동으로 코멘트를 추가할지 물어봅니다.
+
+- **동작**: 키가 사전(`envAutocomplete.customKeys` 혹은 내장 사전)에 있으면, 바로 위에
+  `# [그룹] 설명` 형태의 코멘트를 삽입합니다.
+- **사용자 선택**: `코멘트 추가` 혹은 `건너뛰기` 버튼을 클릭합니다.
+- **예시**:
+  ```env
+  # [Database] PostgreSQL connection string
+  DATABASE_URL=postgresql://...
+  # [Server] Port number the server listens on
+  PORT=3000
+  ```
+
+> 이 기능은 앞에서 구현한 `onDidSaveTextDocument` 이벤트를 활용합니다.
+
 
 Any key **not found in the dictionary** is highlighted with an orange border and a `⚠ Unknown key` tag. A diagnostic warning appears in the Problems panel.
 
