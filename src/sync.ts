@@ -36,3 +36,35 @@ export function parseEnv(content: string): EnvEntry[] {
   }
   return result;
 }
+
+export function generateExampleFromEnv(
+  envContent: string,
+  exampleContent: string,
+  dictionary: Record<string, any>
+): string {
+  const envEntries = parseEnv(envContent);
+  const exampleEntries = parseEnv(exampleContent);
+  const exampleKeys = new Set(exampleEntries.map(e => e.key));
+
+  let updatedContent = exampleContent.trim();
+  if (updatedContent.length > 0 && !updatedContent.endsWith('\n')) {
+    updatedContent += '\n';
+  }
+
+  let appended = false;
+  for (const entry of envEntries) {
+    if (!exampleKeys.has(entry.key)) {
+      if (!appended && updatedContent.length > 0) {
+        updatedContent += '\n';
+        appended = true;
+      }
+      if (entry.commentBefore) {
+        updatedContent += `${entry.commentBefore}\n`;
+      }
+      const defaultValue = dictionary[entry.key]?.value ?? '';
+      updatedContent += `${entry.key}=${defaultValue}\n`;
+    }
+  }
+  return updatedContent;
+}
+

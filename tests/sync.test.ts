@@ -1,4 +1,4 @@
-import { parseEnv } from '../src/sync';
+import { parseEnv, generateExampleFromEnv } from '../src/sync';
 
 describe('parseEnv', () => {
   it('should parse env lines with comments correctly', () => {
@@ -10,3 +10,19 @@ describe('parseEnv', () => {
     ]);
   });
 });
+
+describe('generateExampleFromEnv', () => {
+  it('should generate .env.example preserving comments and masking values', () => {
+    const envContent = `# Database\nDB_PASSWORD=secret123\nPORT=8000`;
+    const exampleContent = `# Database\nDB_PASSWORD=\n`;
+    const dictionary = { PORT: { value: '3000', description: 'Port', group: 'App' } };
+    
+    const result = generateExampleFromEnv(envContent, exampleContent, dictionary);
+    
+    // DB_PASSWORD는 기존에 있으므로 보존, PORT는 새로 추가되면서 기본값인 3000 사용
+    expect(result).toContain('DB_PASSWORD=');
+    expect(result).toContain('# Database');
+    expect(result).toContain('PORT=3000');
+  });
+});
+
