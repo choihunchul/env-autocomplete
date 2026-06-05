@@ -10,6 +10,7 @@ import { generateExampleFromEnv, generateEnvFromExample, stripValues } from './s
 // ─── 상수 ─────────────────────────────────────────────────────────────────────
 const UNKNOWN_KEY_DIAGNOSTIC_CODE = 'unknown-env-key';
 const UNKNOWN_KEY_DIAGNOSTIC_SOURCE = 'Env Autocomplete';
+const EMPTY_VALUE_DIAGNOSTIC_CODE = 'empty-env-value';
 
 /** KEY=VALUE 한 줄 파싱 (주석·빈줄 제외) */
 const LINE_REGEX = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/;
@@ -105,7 +106,25 @@ async function applyUnknownKeyHighlights(
     const match = LINE_REGEX.exec(line.text);
     if (!match) { continue; }
 
-    const key = match[1];
+    const key   = match[1];
+    const value = match[2].trim();
+
+    // ── 빈 값 경고 (.env.example는 제외) ─────────────────────────────
+    const isExample = path.basename(editor.document.uri.fsPath).endsWith('.example');
+    if (!isExample && value === '') {
+      const eqPos   = key.length;                              // '=' 위치
+      const eqRange = new vscode.Range(i, eqPos, i, eqPos + 1);
+      const diag = new vscode.Diagnostic(
+        eqRange,
+        vscode.l10n.t("'{0}' has no value set.", key),
+        vscode.DiagnosticSeverity.Warning
+      );
+      diag.code   = EMPTY_VALUE_DIAGNOSTIC_CODE;
+      diag.source = UNKNOWN_KEY_DIAGNOSTIC_SOURCE;
+      diagnostics.push(diag);
+    }
+
+    // ── 미등록 키 경고 ───────────────────────────────────────────
     if (knownKeys.has(key)) { continue; }
 
     const keyRange = new vscode.Range(i, 0, i, key.length);
