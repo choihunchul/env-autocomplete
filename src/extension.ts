@@ -1,8 +1,11 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { mergeDictionaries, EnvKeyInfo } from './completion';
 import { scanContentForEnvKeys } from './scanner';
 import { openAddKeyPanel } from './addKeyPanel';
 import { formatEnvDocument } from './formatter';
+import { generateExampleFromEnv, generateEnvFromExample, stripValues } from './sync';
 
 // ─── 상수 ─────────────────────────────────────────────────────────────────────
 const UNKNOWN_KEY_DIAGNOSTIC_CODE = 'unknown-env-key';
@@ -332,6 +335,154 @@ export function activate(context: vscode.ExtensionContext) {
     diagnosticCollection.delete(document.uri);
   });
 
+  // ── 5-5. 가상 문서 프로바이더: 값 제거 Diff용 ─────────────────────────────
+  const envKeyDiffScheme = 'env-key-diff';
+  const envKeyDiffProvider = vscode.workspace.registerTextDocumentContentProvider(
+    envKeyDiffScheme,
+    {
+      async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
+        const targetUri = vscode.Uri.parse(uri.query);
+        try {
+          const doc = await vscode.workspace.openTextDocument(targetUri);
+          return stripValues(doc.getText());
+        } catch {
+          return '';
+        }
+      }
+    }
+  );
+
+  // ── 5-6. 커맨드: .env.example 작성/동기화 ────────────────────────────────
+  const createOrSyncExampleCommand = vscode.commands.registerCommand(
+    'envAutocomplete.createOrSyncExample',
+    async (contextUri?: vscode.Uri) => {
+      // 탐색기 우클릭 시 contextUri로 전달되고, 타이틀 바 클릭 시엔 activeTextEditor 사용
+      const fileUri = contextUri ?? vscode.window.activeTextEditor?.document.uri;
+      if (!fileUri) {
+        vscode.window.showErrorMessage('ENV: .env 파일을 열거나 선택해주세요.');
+        return;
+      }
+
+      const envFilePath = fileUri.fsPath;
+      if (!envFilePath.endsWith('.env') && !path.basename(envFilePath).match(/^\.env$/)) {
+        vscode.window.showErrorMessage('ENV: .env 파일에서만 실행 가능합니다.');
+        return;
+      }
+
+      const exampleFilePath = envFilePath + '.example';
+      const envContent = fs.readFileSync(envFilePath, 'utf8');
+      const exampleContent = fs.existsSync(exampleFilePath)
+        ? fs.readFileSync(exampleFilePath, 'utf8')
+        : '';
+
+      const config = vscode.workspace.getConfiguration('envAutocomplete');
+      const enableBuiltIn = config.get<boolean>('enableBuiltInKeys', true);
+      const customKeys = config.get<Record<string, EnvKeyInfo>>('customKeys', {});
+      const dictionary = mergeDictionaries(enableBuiltIn, customKeys);
+
+      const newContent = generateExampleFromEnv(envContent, exampleContent, dictionary);
+
+      if (newContent === exampleContent) {
+        vscode.window.showInformationMessage('ENV: .env.example이 이미 최신 상태입니다.');
+        return;
+      }
+
+      fs.writeFileSync(exampleFilePath, newContent, 'utf8');
+      const doc = await vscode.workspace.openTextDocument(exampleFilePath);
+      await vscode.window.showTextDocument(doc);
+      vscode.window.showInformationMessage('ENV: .env.example 작성/동기화 완료!');
+    }
+  );
+
+  // ── 5-7. 커맨드: .env 작성/동기화 ───────────────────────────────────────
+  const createOrSyncEnvCommand = vscode.commands.registerCommand(
+    'envAutocomplete.createOrSyncEnv',
+    async (contextUri?: vscode.Uri) => {
+      const fileUri = contextUri ?? vscode.window.activeTextEditor?.document.uri;
+      if (!fileUri) {
+        vscode.window.showErrorMessage('ENV: .env.example 파일을 열거나 선택해주세요.');
+        return;
+      }
+
+      const exampleFilePath = fileUri.fsPath;
+      if (!path.basename(exampleFilePath).match(/^\.env\.example$/)) {
+        vscode.window.showErrorMessage('ENV: .env.example 파일에서만 실행 가능합니다.');
+        return;
+      }
+
+      const envFilePath = exampleFilePath.replace(/\.example$/, '');
+      const exampleContent = fs.readFileSync(exampleFilePath, 'utf8');
+      const envContent = fs.existsSync(envFilePath)
+        ? fs.readFileSync(envFilePath, 'utf8')
+        : '';
+
+      const newContent = generateEnvFromExample(exampleContent, envContent);
+
+      if (newContent === envContent) {
+        vscode.window.showInformationMessage('ENV: .env가 이미 최신 상태입니다.');
+        return;
+      }
+
+      fs.writeFileSync(envFilePath, newContent, 'utf8');
+      const doc = await vscode.workspace.openTextDocument(envFilePath);
+      await vscode.window.showTextDocument(doc);
+      vscode.window.showInformationMessage('ENV: .env 작성/동기화 완료!');
+    }
+  );
+
+  // ── 5-8. 커맨드: 키 비교 (Compare Keys) ─────────────────────────────────
+  const compareKeysCommand = vscode.commands.registerCommand(
+    'envAutocomplete.compareKeys',
+    async (contextUri?: vscode.Uri) => {
+      const fileUri = contextUri ?? vscode.window.activeTextEditor?.document.uri;
+      if (!fileUri) {
+        vscode.window.showErrorMessage('ENV: .env 또는 .env.example 파일을 열거나 선택해주세요.');
+        return;
+      }
+
+      const filePath = fileUri.fsPath;
+      const basename = path.basename(filePath);
+
+      let envFilePath: string;
+      let exampleFilePath: string;
+
+      if (basename === '.env.example') {
+        exampleFilePath = filePath;
+        envFilePath = filePath.replace(/\.example$/, '');
+      } else if (basename.match(/^\.env/)) {
+        envFilePath = filePath;
+        exampleFilePath = filePath.endsWith('.example') ? filePath : filePath + '.example';
+      } else {
+        vscode.window.showErrorMessage('ENV: .env 또는 .env.example 파일에서만 실행 가능합니다.');
+        return;
+      }
+
+      if (!fs.existsSync(envFilePath)) {
+        vscode.window.showErrorMessage(`ENV: ${path.basename(envFilePath)} 파일이 존재하지 않습니다.`);
+        return;
+      }
+      if (!fs.existsSync(exampleFilePath)) {
+        vscode.window.showErrorMessage(`ENV: ${path.basename(exampleFilePath)} 파일이 존재하지 않습니다.`);
+        return;
+      }
+
+      // 값을 제거한 가상 URI 생성 (env-key-diff://authority/filename?realUri)
+      const envVirtualUri = vscode.Uri.parse(
+        `${envKeyDiffScheme}://authority/${path.basename(envFilePath)}?${vscode.Uri.file(envFilePath).toString()}`
+      );
+      const exampleVirtualUri = vscode.Uri.parse(
+        `${envKeyDiffScheme}://authority/${path.basename(exampleFilePath)}?${vscode.Uri.file(exampleFilePath).toString()}`
+      );
+
+      await vscode.commands.executeCommand(
+        'vscode.diff',
+        envVirtualUri,
+        exampleVirtualUri,
+        '.env ↔ .env.example (키 비교)'
+      );
+    }
+  );
+
   context.subscriptions.push(
     completionProvider,
     codeActionProvider,
@@ -345,6 +496,10 @@ export function activate(context: vscode.ExtensionContext) {
     onSelectionChange,
     onConfigChange,
     onDocClose,
+    envKeyDiffProvider,
+    createOrSyncExampleCommand,
+    createOrSyncEnvCommand,
+    compareKeysCommand,
   );
 }
 

@@ -29,8 +29,59 @@
       {
         "command": "envAutocomplete.addKeyToDictionary",
         "title": "ENV: 사전에 키 추가"
+      },
+      {
+        "command": "envAutocomplete.createOrSyncExample",
+        "title": "ENV: .env.example 작성/동기화",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "envAutocomplete.createOrSyncEnv",
+        "title": "ENV: .env 작성/동기화",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "envAutocomplete.compareKeys",
+        "title": "ENV: 키 비교 (Compare Keys)",
+        "icon": "$(diff)"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "envAutocomplete.createOrSyncExample",
+          "when": "resourceFilename == .env",
+          "group": "env-sync@1"
+        },
+        {
+          "command": "envAutocomplete.createOrSyncEnv",
+          "when": "resourceFilename == .env.example",
+          "group": "env-sync@1"
+        },
+        {
+          "command": "envAutocomplete.compareKeys",
+          "when": "resourceFilename =~ /^\\.env(\\..+)?$/",
+          "group": "env-sync@2"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "envAutocomplete.createOrSyncExample",
+          "when": "resourceFilename == .env",
+          "group": "navigation@1"
+        },
+        {
+          "command": "envAutocomplete.createOrSyncEnv",
+          "when": "resourceFilename == .env.example",
+          "group": "navigation@1"
+        },
+        {
+          "command": "envAutocomplete.compareKeys",
+          "when": "resourceFilename =~ /^\\.env(\\..+)?$/",
+          "group": "navigation@2"
+        }
+      ]
+    },
     "languages": [
       {
         "id": "dotenv",
