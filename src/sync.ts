@@ -68,3 +68,33 @@ export function generateExampleFromEnv(
   return updatedContent;
 }
 
+export function generateEnvFromExample(
+  exampleContent: string,
+  envContent: string
+): string {
+  const exampleEntries = parseEnv(exampleContent);
+  const envEntries = parseEnv(envContent);
+  const envKeys = new Set(envEntries.map(e => e.key));
+
+  let updatedContent = envContent.trim();
+  if (updatedContent.length > 0 && !updatedContent.endsWith('\n')) {
+    updatedContent += '\n';
+  }
+
+  let appended = false;
+  for (const entry of exampleEntries) {
+    if (!envKeys.has(entry.key)) {
+      if (!appended && updatedContent.length > 0) {
+        updatedContent += '\n';
+        appended = true;
+      }
+      if (entry.commentBefore) {
+        updatedContent += `${entry.commentBefore}\n`;
+      }
+      updatedContent += `${entry.key}=${entry.value}\n`;
+    }
+  }
+  return updatedContent;
+}
+
+

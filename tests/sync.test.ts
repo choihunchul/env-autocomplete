@@ -1,4 +1,4 @@
-import { parseEnv, generateExampleFromEnv } from '../src/sync';
+import { parseEnv, generateExampleFromEnv, generateEnvFromExample } from '../src/sync';
 
 describe('parseEnv', () => {
   it('should parse env lines with comments correctly', () => {
@@ -25,4 +25,19 @@ describe('generateExampleFromEnv', () => {
     expect(result).toContain('PORT=3000');
   });
 });
+
+describe('generateEnvFromExample', () => {
+  it('should sync missing keys from example to env without overwriting existing env values', () => {
+    const exampleContent = `# Database\nDB_PASSWORD=\nPORT=3000\nNEW_KEY=123`;
+    const envContent = `# Database\nDB_PASSWORD=my_secret\n`;
+    
+    const result = generateEnvFromExample(exampleContent, envContent);
+    
+    // DB_PASSWORD는 덮어씌워지지 않고 기존 my_secret 유지, PORT와 NEW_KEY는 추가됨
+    expect(result).toContain('DB_PASSWORD=my_secret');
+    expect(result).toContain('PORT=3000');
+    expect(result).toContain('NEW_KEY=123');
+  });
+});
+
 
