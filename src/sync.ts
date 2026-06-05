@@ -97,4 +97,19 @@ export function generateEnvFromExample(
   return updatedContent;
 }
 
-
+export function stripValues(content: string): string {
+  const lines = content.split(/\r?\n/);
+  const strippedLines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#') || trimmed === '') {
+      return line;
+    }
+    const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(trimmed);
+    if (match) {
+      return `${match[1]}=`;
+    }
+    return line;
+  });
+  const result = strippedLines.join('\n');
+  return result.endsWith('\n') ? result : result + '\n';
+}

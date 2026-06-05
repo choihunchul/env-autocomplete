@@ -1,4 +1,4 @@
-import { parseEnv, generateExampleFromEnv, generateEnvFromExample } from '../src/sync';
+import { parseEnv, generateExampleFromEnv, generateEnvFromExample, stripValues } from '../src/sync';
 
 describe('parseEnv', () => {
   it('should parse env lines with comments correctly', () => {
@@ -39,5 +39,14 @@ describe('generateEnvFromExample', () => {
     expect(result).toContain('NEW_KEY=123');
   });
 });
+
+describe('stripValues', () => {
+  it('should strip values from env lines keeping keys and comments', () => {
+    const content = `# Comment\nDB_HOST=localhost\nDB_PASS=1234\n\n# Group2\nPORT=3000`;
+    const result = stripValues(content);
+    expect(result).toBe(`# Comment\nDB_HOST=\nDB_PASS=\n\n# Group2\nPORT=\n`);
+  });
+});
+
 
 
